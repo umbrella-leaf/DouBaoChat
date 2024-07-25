@@ -23,16 +23,21 @@ class ChatBot:
             self,
             api_key: Optional[str] = None,
             endpoint: Optional[str] = None,
+            bot_id: Optional[str] = None,
             timeout: Optional[float] = None,
             temperature: Optional[float] = None,
             top_p: Optional[float] = None,
             frequency_penalty: Optional[float] = None,
             system_prompt: Optional[str] = None,
     ) -> None:
-        endpoint = endpoint or ENDPOINT.DOUBAO_PRO_32K.name
-        if endpoint.upper() not in ENDPOINTS:
-            raise ValueError(f"非法模型名: {endpoint}，请调用ChatBot.show_available_models()查看可用模型名")
-        self._endpoint: str = getattr(ENDPOINT, endpoint.upper()).value
+        self._bot_id = bot_id
+        self._endpoint = None
+        if self._bot_id is None:
+            endpoint = endpoint or ENDPOINT.DOUBAO_PRO_32K.name
+            if endpoint.upper() not in ENDPOINTS:
+                raise ValueError(f"非法模型名: {endpoint}，请调用ChatBot.show_available_models()查看可用模型名")
+            self._endpoint: str = getattr(ENDPOINT, endpoint.upper()).value
+
         self._api_key = api_key or os.environ["ARK_API_KEY"]
         self._timeout = timeout
         self._temperature = temperature
@@ -44,6 +49,9 @@ class ChatBot:
             api_key=self._api_key,
             timeout=self._timeout,
         )
+
+        chat = self._client.bot_chat if self._bot_id else self._client.chat
+        self._chat_function = chat.completions.create
 
         self._conversation: Dict[str, List[Dict]] = {
             "default": [
@@ -85,14 +93,14 @@ class ChatBot:
         """
         if convo_id not in self._conversation:
             raise ValueError(f"对话ID {convo_id} 不存在")
-        completion = self._client.chat.completions.create(
-            model=self._endpoint,
+        completion = self._chat_function(
+            model=self._bot_id if self._bot_id else self._endpoint,
             messages=self._conversation[convo_id],
             stream=True,
             temperature=kwargs.get("temperature", self._temperature),
             top_p=kwargs.get("top_p", self._top_p),
             frequency_penalty=kwargs.get("frequency_penalty", self._frequency_penalty),
-            user=convo_id
+            # user=convo_id
         )
         return completion
 
