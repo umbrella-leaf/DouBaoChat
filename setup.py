@@ -26,8 +26,8 @@ setup(
     keywords=['API', 'DouBao'],
     install_requires=[
         "volcengine-python-sdk[ark]==1.0.93",
-        "httpx==0.27.0",
-        "pydantic==1.10.0"
+        "httpx <1,>=0.23.0",
+        "pydantic <3,>=1.9.0"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
